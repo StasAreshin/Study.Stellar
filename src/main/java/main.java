@@ -16,7 +16,8 @@ public class main {
     private static void runOperations() {
 //        TestCases.doTransactions();
 //        TestCases.readPayments();
-        TestCases.nonNativeAssetTest();
+//        TestCases.nonNativeAssetTest();
+        TestCases.setDomainTest();
     }
 
     public static void main(String arg[]) {
