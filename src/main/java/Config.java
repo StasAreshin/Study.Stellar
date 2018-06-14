@@ -15,7 +15,7 @@ public class Config {
         return null;
     }
 
-    public static void saveLastPagingToken(String accountId) {
+    public static void saveLastPagingToken(String accountId, String pagingToken) {
         //TODO: Here can implemented saving the token of the last page viewed for each account
     }
 }

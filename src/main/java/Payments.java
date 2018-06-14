@@ -2,14 +2,19 @@ import org.stellar.sdk.*;
 import org.stellar.sdk.requests.EventListener;
 import org.stellar.sdk.requests.PaymentsRequestBuilder;
 import org.stellar.sdk.responses.AccountResponse;
+import org.stellar.sdk.responses.Page;
 import org.stellar.sdk.responses.SubmitTransactionResponse;
 import org.stellar.sdk.responses.operations.OperationResponse;
 import org.stellar.sdk.responses.operations.PaymentOperationResponse;
+
+import java.io.IOException;
 
 /**
  * Created by Stas on 2018-06-13.
  */
 public class Payments {
+
+    private final static Boolean USE_LISTENER = false;
 
     public static PaymentOperation getOperation(KeyPair destination, Asset asset, String amount) {
         return new PaymentOperation.Builder(destination, asset, amount).build();
@@ -70,6 +75,42 @@ public class Payments {
         }
     }
 
+    private static void printOperation(OperationResponse operationResponse, KeyPair pair) {
+        // Record the paging token so we can start from here next time.
+        Config.saveLastPagingToken(pair.getAccountId(), operationResponse.getPagingToken());
+
+        // The payments stream includes both sent and received payments. We only
+        // want to process received payments here.
+        if (operationResponse instanceof PaymentOperationResponse) {
+            PaymentOperationResponse payment = (PaymentOperationResponse) operationResponse;
+
+            String directionPrefix = (payment.getTo().getAccountId().equals(pair.getAccountId()) ? "in" : "out");
+
+            String amount = payment.getAmount();
+            Asset asset = payment.getAsset();
+            String assetName;
+            if (asset.equals(new AssetTypeNative())) {
+                assetName = "lumens";
+            } else {
+                StringBuilder assetNameBuilder = new StringBuilder();
+                assetNameBuilder.append(((AssetTypeCreditAlphaNum)asset).getCode());
+                assetNameBuilder.append(":");
+                assetNameBuilder.append(((AssetTypeCreditAlphaNum)asset).getIssuer().getAccountId());
+                assetName = assetNameBuilder.toString();
+            }
+
+            StringBuilder output = new StringBuilder();
+            output.append(directionPrefix);
+            output.append(" ");
+            output.append(amount);
+            output.append(" ");
+            output.append(assetName);
+            output.append(" from ");
+            output.append(payment.getFrom().getAccountId());
+            System.out.println(output.toString());
+        }
+
+    }
     public static void fetchPayments(final String accountId) {
         Server server = Connections.getServer();
         final KeyPair pair = KeyPair.fromAccountId(accountId);
@@ -84,23 +125,30 @@ public class Payments {
             paymentsRequest.cursor(lastToken);
         }
 
-        // `stream` will send each recorded payment, one by one, then keep the
-        // connection open and continue to send you new payments as they occur.
-        paymentsRequest.stream(new EventListener<OperationResponse>() {
-            public void onEvent(OperationResponse operationResponse) {
-                // Record the paging token so we can start from here next time.
-                Config.saveLastPagingToken(accountId);
-
-                // The payments stream includes both sent and received payments. We only
-                // want to process received payments here.
-                if (operationResponse instanceof PaymentOperationResponse) {
-                    PaymentOperationResponse payment = (PaymentOperationResponse) operationResponse;
-
-                    String direction = (payment.getTo().equals(pair) ? "<--" : "-->");
-
+        if (USE_LISTENER) {
+            Config.log("\nPayments for " + accountId + " (listener)");
+            // `stream` will send each recorded payment, one by one, then keep the
+            // connection open and continue to send you new payments as they occur.
+            paymentsRequest.stream(new EventListener<OperationResponse>() {
+                public void onEvent(OperationResponse operationResponse) {
+                    printOperation(operationResponse, pair);
                 }
-
+            });
+        } else {
+            Config.log("\nPayments for " + accountId + " (execute)");
+            paymentsRequest = server.payments().forAccount(pair);
+            Page<OperationResponse> page = null;
+            try {
+                page = paymentsRequest.execute();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
+            if (page != null) {
+                for (OperationResponse operationResponse : page.getRecords()) {
+                    printOperation(operationResponse, pair);
+                }
+            }
+        }
+
     }
 }

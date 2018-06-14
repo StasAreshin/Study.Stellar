@@ -14,7 +14,8 @@ public class main {
     }
 
     private static void runOperations() {
-        TestCases.doErrorTransaction();
+        TestCases.doTransactions();
+        TestCases.readPayments();
     }
 
     public static void main(String arg[]) {
