@@ -10,12 +10,12 @@ import java.util.Scanner;
 /**
  * Created by Stas on 2018-06-13.
  */
-public class Accounts {
+class Accounts {
 
-    public static void printAccountDetails(String accountId) {
+    static void printAccountDetails(String accountId) {
         printAccountDetails(getAccount(accountId));
     }
-    public static void printAccountDetails(AccountResponse account) {
+    static void printAccountDetails(AccountResponse account) {
         if (account == null) {
             return;
         }
@@ -32,17 +32,10 @@ public class Accounts {
         }
     }
 
-    public static AccountResponse getAccount(String accountId) {
-        AccountResponse result = null;
-        KeyPair pair = KeyPair.fromAccountId(accountId);
-        if (pair == null) {
-            Config.log("Pair for account id is null");
-        } else {
-            result = getAccount(pair);
-        }
-        return result;
+    static AccountResponse getAccount(String accountId) {
+        return getAccount(KeyPair.fromAccountId(accountId));
     }
-    public static AccountResponse getAccount(KeyPair pair) {
+    static AccountResponse getAccount(KeyPair pair) {
         AccountResponse result = null;
 
         if (pair != null) {
@@ -57,7 +50,7 @@ public class Accounts {
         return result;
     }
 
-    public static void createTestAccount() {
+    static void createTestAccount() {
         KeyPair pair = generateNewPair();
         String friendBotURL = String.format(main.HOST_FRIEND_BOT + "/?addr=%s", pair.getAccountId());
         InputStream response = null;
@@ -73,7 +66,7 @@ public class Accounts {
         }
     }
 
-    public static KeyPair generateNewPair() {
+    private static KeyPair generateNewPair() {
         KeyPair pair = KeyPair.random();
         Config.log("seed: " + new String(pair.getSecretSeed()));
         Config.log("accounId: " + pair.getAccountId());

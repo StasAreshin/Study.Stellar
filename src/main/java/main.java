@@ -6,22 +6,23 @@ public class main {
     private static final String PARAM_RUNINITIALIZATION = "run_initialization";
 
     //    public static final String HOST_HORIZON = "localhost:8000";
-    public static final String HOST_HORIZON = "https://horizon-testnet.stellar.org";
-    public static final String HOST_FRIEND_BOT = "https://friendbot.stellar.org";
+     static final String HOST_HORIZON = "https://horizon-testnet.stellar.org";
+     static final String HOST_FRIEND_BOT = "https://friendbot.stellar.org";
 
     private static void runInitialization() {
         Accounts.createTestAccount();
     }
 
     private static void runOperations() {
-        TestCases.doTransactions();
-        TestCases.readPayments();
+//        TestCases.doTransactions();
+//        TestCases.readPayments();
+        TestCases.nonNativeAssetTest();
     }
 
     public static void main(String arg[]) {
         Boolean runInitialization = false;
-        for (int i=0; i<arg.length; i++) {
-            if (PARAM_RUNINITIALIZATION.equalsIgnoreCase(arg[i])) {
+        for (String anArg : arg) {
+            if (PARAM_RUNINITIALIZATION.equalsIgnoreCase(anArg)) {
                 runInitialization = true;
             }
         }

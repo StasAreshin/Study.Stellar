@@ -4,9 +4,9 @@ import org.stellar.sdk.Server;
 /**
  * Created by Stas on 2018-06-13.
  */
-public class Connections {
+class Connections {
 
-    public static Server getServer() {
+    static Server getServer() {
         return getServer(false);
     }
 
