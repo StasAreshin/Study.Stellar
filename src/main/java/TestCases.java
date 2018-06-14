@@ -82,6 +82,7 @@ class TestCases {
                 issuingKeys,
                 new SetOptionsOperation.Builder()
                         .setHomeDomain("test-home-domain.com")
+                        .setSetFlags(AccountFlag.AUTH_REQUIRED_FLAG.getValue() | AccountFlag.AUTH_REVOCABLE_FLAG.getValue())
                         .build(),
                 null);
 
