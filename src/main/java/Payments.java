@@ -8,22 +8,27 @@ import org.stellar.sdk.responses.operations.OperationResponse;
 import org.stellar.sdk.responses.operations.PaymentOperationResponse;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Created by Stas on 2018-06-13.
  */
-public class Payments {
+class Payments {
 
     private final static Boolean USE_LISTENER = false;
 
-    public static PaymentOperation getOperation(KeyPair destination, Asset asset, String amount) {
+    static PaymentOperation getOperation(KeyPair destination, Asset asset, String amount) {
         return new PaymentOperation.Builder(destination, asset, amount).build();
     }
 
-    public static void makeTrasnaction(KeyPair source, KeyPair destination, PaymentOperation operations[], Memo memo) {
+    static Transaction makeTrasnaction(KeyPair source, KeyPair destination, Operation operation, Memo memo) {
+        Operation ops[] = {operation};
+        return makeTrasnaction(source, destination, ops, memo);
+    }
+    static Transaction makeTrasnaction(KeyPair source, KeyPair destination, Operation operations[], Memo memo) {
 
         if (operations == null || operations.length == 0) {
-            return;
+            return null;
         }
 
         // First, check to make sure that the destination account exists.
@@ -31,7 +36,7 @@ public class Payments {
         // the transaction fee when the transaction fails.
         // It will throw HttpResponseException if account does not exist or there was another error.
         if (Accounts.getAccount(destination) == null) {
-            return;
+            return null;
         }
 
         // If there was no error, load up-to-date information on your account.
@@ -45,13 +50,22 @@ public class Payments {
             Config.log("Memo " + memo.toString());
             trBuilder.addMemo(memo);
         }
-        for (PaymentOperation op : operations) {
+        for (Operation op : operations) {
             trBuilder.addOperation(op);
-            Config.log(String.format(
-                    "Operation: -> %s: %s = %s",
-                    op.getDestination().getAccountId(),
-                    op.getAsset().getType(),
-                    op.getAmount()));
+            if (op instanceof PaymentOperation) {
+                Config.log(String.format(
+                        "%s -> %s: %s = %s",
+                        op.getClass().getName(),
+                        ((PaymentOperation) op).getDestination().getAccountId(),
+                        formatAssetName(((PaymentOperation) op).getAsset()),
+                        ((PaymentOperation) op).getAmount()));
+            } else if (op instanceof ChangeTrustOperation) {
+                Config.log(String.format(
+                        "%s -> %s = %s",
+                        op.getClass().getName(),
+                        formatAssetName(((ChangeTrustOperation) op).getAsset()),
+                        ((ChangeTrustOperation) op).getLimit()));
+            }
         }
         Transaction transaction = trBuilder.build();
 
@@ -73,8 +87,19 @@ public class Payments {
             // already built transaction:
             // SubmitTransactionResponse response = server.submitTransaction(transaction);
         }
+
+        return transaction;
     }
 
+    private static String formatAssetName(Asset asset) {
+        if (asset.equals(new AssetTypeNative())) {
+            return "lumens";
+        } else {
+            return ((AssetTypeCreditAlphaNum) asset).getCode() +
+                    ":" +
+                    ((AssetTypeCreditAlphaNum) asset).getIssuer().getAccountId();
+        }
+    }
     private static void printOperation(OperationResponse operationResponse, KeyPair pair) {
         // Record the paging token so we can start from here next time.
         Config.saveLastPagingToken(pair.getAccountId(), operationResponse.getPagingToken());
@@ -86,32 +111,19 @@ public class Payments {
 
             String directionPrefix = (payment.getTo().getAccountId().equals(pair.getAccountId()) ? "in" : "out");
 
-            String amount = payment.getAmount();
-            Asset asset = payment.getAsset();
-            String assetName;
-            if (asset.equals(new AssetTypeNative())) {
-                assetName = "lumens";
-            } else {
-                StringBuilder assetNameBuilder = new StringBuilder();
-                assetNameBuilder.append(((AssetTypeCreditAlphaNum)asset).getCode());
-                assetNameBuilder.append(":");
-                assetNameBuilder.append(((AssetTypeCreditAlphaNum)asset).getIssuer().getAccountId());
-                assetName = assetNameBuilder.toString();
-            }
-
-            StringBuilder output = new StringBuilder();
-            output.append(directionPrefix);
-            output.append(" ");
-            output.append(amount);
-            output.append(" ");
-            output.append(assetName);
-            output.append(" from ");
-            output.append(payment.getFrom().getAccountId());
-            System.out.println(output.toString());
+            String output = directionPrefix +
+                    " " +
+                    payment.getAmount() +
+                    " " +
+                    formatAssetName(payment.getAsset()) +
+                    " from " +
+                    payment.getFrom().getAccountId();
+            System.out.println(output);
         }
 
     }
-    public static void fetchPayments(final String accountId) {
+
+    static void fetchPayments(final String accountId) {
         Server server = Connections.getServer();
         final KeyPair pair = KeyPair.fromAccountId(accountId);
 

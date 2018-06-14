@@ -1,24 +1,22 @@
-import org.stellar.sdk.AssetTypeNative;
-import org.stellar.sdk.KeyPair;
-import org.stellar.sdk.Memo;
-import org.stellar.sdk.PaymentOperation;
+import org.stellar.sdk.*;
 import org.stellar.sdk.responses.AccountResponse;
 
 /**
  * Created by Stas on 2018-06-13.
  */
-public class TestCases {
+class TestCases {
 
     //transaction: "https://horizon-testnet.stellar.org/transactions/ca4277c0b39bfab7b5b9797227f7fefcfdb8be7d5dd2d51fa84d6f5e40de71c3"
-    public static final char SEED_1[] = "SA7K65VOPZMPKCQDNGRY6NYDAFOEDK7MFCNUFP4NZMUQKCIFB6PYFVLD".toCharArray();
-    public static final String ACCOUNT_ID_1 = "GAJFV74BU3YKS4EEFG3Y57KZNILCVH7K3VZGLY7W556DSHEL2UHIYAFI";
+    private static final char SEED_1[] = "SA7K65VOPZMPKCQDNGRY6NYDAFOEDK7MFCNUFP4NZMUQKCIFB6PYFVLD".toCharArray();
+    private static final String ACCOUNT_ID_1 = "GAJFV74BU3YKS4EEFG3Y57KZNILCVH7K3VZGLY7W556DSHEL2UHIYAFI";
 
     //transaction: "https://horizon-testnet.stellar.org/transactions/ca4277c0b39bfab7b5b9797227f7fefcfdb8be7d5dd2d51fa84d6f5e40de71c3"
-    public static final char SEED_2[] = "SDLTP2DTC7GIBKLF73QI6Q4UQR5FSXKLSO326OTHFKWB77IKLBLPMZQ4".toCharArray();
-    public static final String ACCOUNT_ID_2 = "GA4ZSA3YCV25ARCLWK6N2WX2YT4GLNCMHVJSY5LJG3DF7R2BOEHKMUUS";
+    private static final char SEED_2[] = "SDLTP2DTC7GIBKLF73QI6Q4UQR5FSXKLSO326OTHFKWB77IKLBLPMZQ4".toCharArray();
+    private static final String ACCOUNT_ID_2 = "GA4ZSA3YCV25ARCLWK6N2WX2YT4GLNCMHVJSY5LJG3DF7R2BOEHKMUUS";
 
+    private static final String ASSET_ASTRODOLLAR = "AstroDollar";
 
-    public static void doTransactions() {
+    static void doTransactions() {
         doTransactionFromAccount(ACCOUNT_ID_1, SEED_1, ACCOUNT_ID_2);
         doTransactionFromAccount(ACCOUNT_ID_2, SEED_2, ACCOUNT_ID_1);
     }
@@ -45,9 +43,34 @@ public class TestCases {
         Accounts.printAccountDetails(accountId2);
     }
 
-    public static void readPayments() {
+    static void readPayments() {
         Payments.fetchPayments(ACCOUNT_ID_1);
         Payments.fetchPayments(ACCOUNT_ID_2);
     }
 
+    static void nonNativeAssetTest() {
+        Accounts.printAccountDetails(ACCOUNT_ID_1);
+        Accounts.printAccountDetails(ACCOUNT_ID_2);
+
+        Server server = Connections.getServer();
+
+        // Keys for accounts to issue and receive the new asset
+        KeyPair issuingKeys = KeyPair.fromSecretSeed(SEED_1);
+        KeyPair receivingKeys = KeyPair.fromSecretSeed(SEED_2);
+
+        // Create an object to represent the new asset
+        Asset astroDollar = Asset.createNonNativeAsset(ASSET_ASTRODOLLAR, issuingKeys);
+
+        // First, the receiving account must trust the asset
+        AccountResponse receiving = Accounts.getAccount(receivingKeys);
+        // The `ChangeTrust` operation creates (or alters) a trustline
+        // The second parameter limits the amount the account can hold
+        Payments.makeTrasnaction(receivingKeys, issuingKeys, new ChangeTrustOperation.Builder(astroDollar, "1000").build(), null);
+
+        // Second, the issuing account actually sends a payment using the asset
+        Payments.makeTrasnaction(issuingKeys, receivingKeys, new PaymentOperation.Builder(receivingKeys, astroDollar, "10").build(), null);
+
+        Accounts.printAccountDetails(ACCOUNT_ID_1);
+        Accounts.printAccountDetails(ACCOUNT_ID_2);
+    }
 }
