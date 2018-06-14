@@ -8,7 +8,6 @@ import org.stellar.sdk.responses.operations.OperationResponse;
 import org.stellar.sdk.responses.operations.PaymentOperationResponse;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Created by Stas on 2018-06-13.
@@ -21,22 +20,28 @@ class Payments {
         return new PaymentOperation.Builder(destination, asset, amount).build();
     }
 
-    static Transaction makeTrasnaction(KeyPair source, KeyPair destination, Operation operation, Memo memo) {
-        Operation ops[] = {operation};
-        return makeTrasnaction(source, destination, ops, memo);
+    static Transaction doTrasnaction(KeyPair source, Operation operation, Memo memo) {
+        return doTrasnaction(source, null, operation, memo);
     }
-    static Transaction makeTrasnaction(KeyPair source, KeyPair destination, Operation operations[], Memo memo) {
+    static Transaction doTrasnaction(KeyPair source, KeyPair destination, Operation operation, Memo memo) {
+        Operation ops[] = {operation};
+        return doTrasnaction(source, destination, ops, memo);
+    }
+    static Transaction doTrasnaction(KeyPair source, KeyPair destination, Operation operations[], Memo memo) {
 
         if (operations == null || operations.length == 0) {
             return null;
         }
 
-        // First, check to make sure that the destination account exists.
-        // You could skip this, but if the account does not exist, you will be charged
-        // the transaction fee when the transaction fails.
-        // It will throw HttpResponseException if account does not exist or there was another error.
-        if (Accounts.getAccount(destination) == null) {
-            return null;
+        // Not all operation needs the destination
+        if (destination != null) {
+            // First, check to make sure that the destination account exists.
+            // You could skip this, but if the account does not exist, you will be charged
+            // the transaction fee when the transaction fails.
+            // It will throw HttpResponseException if account does not exist or there was another error.
+            if (Accounts.getAccount(destination) == null) {
+                return null;
+            }
         }
 
         // If there was no error, load up-to-date information on your account.
@@ -65,6 +70,22 @@ class Payments {
                         op.getClass().getName(),
                         formatAssetName(((ChangeTrustOperation) op).getAsset()),
                         ((ChangeTrustOperation) op).getLimit()));
+            } else if (op instanceof SetOptionsOperation) {
+                Config.log(String.format(
+                        "%s -> ClearFlags = %s\n\tSetFlags = %s\n\tHomeDomain = %s\n\tInflationDestination = %s\n\tLowThreshold = %s\n\tMediumThreshold = %s\n\tHighThreshold = %s\n\tMasterKeyWeight = %s\n\tSigner = %s\n\tSignerWeight = %s",
+                        op.getClass().getSimpleName(),
+                        ((SetOptionsOperation) op).getClearFlags(),
+                        ((SetOptionsOperation) op).getSetFlags(),
+                        ((SetOptionsOperation) op).getHomeDomain(),
+                        ((SetOptionsOperation) op).getInflationDestination(),
+                        ((SetOptionsOperation) op).getLowThreshold(),
+                        ((SetOptionsOperation) op).getMediumThreshold(),
+                        ((SetOptionsOperation) op).getHighThreshold(),
+                        ((SetOptionsOperation) op).getMasterKeyWeight(),
+                        ((SetOptionsOperation) op).getSigner(),
+                        ((SetOptionsOperation) op).getSignerWeight()));
+            } else {
+                Config.log(String.format("%s -> ...", op.getClass().getSimpleName()));
             }
         }
         Transaction transaction = trBuilder.build();

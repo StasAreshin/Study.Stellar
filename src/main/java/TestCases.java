@@ -36,7 +36,7 @@ class TestCases {
                 Payments.getOperation(destination, new AssetTypeNative(), "15")
         };
 
-        Payments.makeTrasnaction(source, destination, operations, Memo.text("Test Transaction"));
+        Payments.doTrasnaction(source, destination, operations, Memo.text("Test Transaction"));
 
         Accounts.printAccountDetails(accountId1);
 
@@ -65,12 +65,25 @@ class TestCases {
         AccountResponse receiving = Accounts.getAccount(receivingKeys);
         // The `ChangeTrust` operation creates (or alters) a trustline
         // The second parameter limits the amount the account can hold
-        Payments.makeTrasnaction(receivingKeys, issuingKeys, new ChangeTrustOperation.Builder(astroDollar, "1000").build(), null);
+        Payments.doTrasnaction(receivingKeys, issuingKeys, new ChangeTrustOperation.Builder(astroDollar, "1000").build(), null);
 
         // Second, the issuing account actually sends a payment using the asset
-        Payments.makeTrasnaction(issuingKeys, receivingKeys, new PaymentOperation.Builder(receivingKeys, astroDollar, "10").build(), null);
+        Payments.doTrasnaction(issuingKeys, receivingKeys, new PaymentOperation.Builder(receivingKeys, astroDollar, "10").build(), null);
 
         Accounts.printAccountDetails(ACCOUNT_ID_1);
         Accounts.printAccountDetails(ACCOUNT_ID_2);
+    }
+
+    static void setDomainTest() {
+        // Keys for issuing account
+        KeyPair issuingKeys = KeyPair.fromSecretSeed(SEED_1);
+
+        Payments.doTrasnaction(
+                issuingKeys,
+                new SetOptionsOperation.Builder()
+                        .setHomeDomain("test-home-domain.com")
+                        .build(),
+                null);
+
     }
 }
