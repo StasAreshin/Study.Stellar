@@ -112,6 +112,26 @@ class Payments {
         return transaction;
     }
 
+    static boolean checkTrust(Asset asset, KeyPair keysToCheck) {
+        Config.log("\nChecking trust for " + formatAssetName(asset) + " in account " + keysToCheck.getAccountId());
+
+        // Load the account you want to check
+        AccountResponse accountToCheck = Accounts.getAccount(keysToCheck);
+
+        if (accountToCheck != null) {
+            // See if any balances are for the asset code and issuer we're looking for
+            for (AccountResponse.Balance balance : accountToCheck.getBalances()) {
+                if (balance.getAsset().equals(asset)) {
+                    Config.log("\tIt's ok");
+                    return true;
+                }
+            }
+        }
+
+        Config.log("\tDo not trust");
+        return false;
+    }
+
     private static String formatAssetName(Asset asset) {
         if (asset.equals(new AssetTypeNative())) {
             return "lumens";

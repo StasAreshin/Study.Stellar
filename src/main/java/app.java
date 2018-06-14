@@ -1,7 +1,7 @@
 /**
  * Created by Stas on 2018-06-13.
  */
-public class main {
+public class app {
 
     private static final String PARAM_RUNINITIALIZATION = "run_initialization";
 
@@ -17,7 +17,8 @@ public class main {
 //        TestCases.doTransactions();
 //        TestCases.readPayments();
 //        TestCases.nonNativeAssetTest();
-        TestCases.setDomainTest();
+//        TestCases.setDomainTest();
+        TestCases.checkTrustBeforePaying();
     }
 
     public static void main(String arg[]) {

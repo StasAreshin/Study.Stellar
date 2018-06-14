@@ -48,6 +48,13 @@ class TestCases {
         Payments.fetchPayments(ACCOUNT_ID_2);
     }
 
+
+    private static Asset getAstroDollar() {
+        return getAstroDollar(KeyPair.fromSecretSeed(SEED_1));
+    }
+    private static Asset getAstroDollar(KeyPair pair) {
+        return Asset.createNonNativeAsset(ASSET_ASTRODOLLAR, pair);
+    }
     static void nonNativeAssetTest() {
         Accounts.printAccountDetails(ACCOUNT_ID_1);
         Accounts.printAccountDetails(ACCOUNT_ID_2);
@@ -59,7 +66,7 @@ class TestCases {
         KeyPair receivingKeys = KeyPair.fromSecretSeed(SEED_2);
 
         // Create an object to represent the new asset
-        Asset astroDollar = Asset.createNonNativeAsset(ASSET_ASTRODOLLAR, issuingKeys);
+        Asset astroDollar = getAstroDollar();
 
         // First, the receiving account must trust the asset
         AccountResponse receiving = Accounts.getAccount(receivingKeys);
@@ -84,7 +91,14 @@ class TestCases {
                         .setHomeDomain("test-home-domain.com")
                         .setSetFlags(AccountFlag.AUTH_REQUIRED_FLAG.getValue() | AccountFlag.AUTH_REVOCABLE_FLAG.getValue())
                         .build(),
-                null);
+                Memo.text("setHomeDomain\nsetSetFlags: AUTH_REQUIRED_FLAG, AUTH_REVOCABLE_FLAG"));
 
     }
+
+    static void checkTrustBeforePaying() {
+        KeyPair pair_2 = KeyPair.fromAccountId(ACCOUNT_ID_2);
+        boolean trust1 = Payments.checkTrust(getAstroDollar(), pair_2);
+        boolean trust2 = Payments.checkTrust(getAstroDollar(pair_2), pair_2);
+    }
+
 }

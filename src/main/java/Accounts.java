@@ -52,7 +52,7 @@ class Accounts {
 
     static void createTestAccount() {
         KeyPair pair = generateNewPair();
-        String friendBotURL = String.format(main.HOST_FRIEND_BOT + "/?addr=%s", pair.getAccountId());
+        String friendBotURL = String.format(app.HOST_FRIEND_BOT + "/?addr=%s", pair.getAccountId());
         InputStream response = null;
         try {
             response = new URL(friendBotURL).openStream();

@@ -14,7 +14,7 @@ class Connections {
         Server result = null;
         if (!isProd) {
             Network.useTestNetwork();
-            result = new Server(main.HOST_HORIZON);
+            result = new Server(app.HOST_HORIZON);
         } else {
             //TODO: Prod server not implemented yet, because we are only studying
         }
