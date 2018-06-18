@@ -1,7 +1,10 @@
 import org.stellar.sdk.*;
 import org.stellar.sdk.requests.EventListener;
+import org.stellar.sdk.requests.OffersRequestBuilder;
 import org.stellar.sdk.requests.PaymentsRequestBuilder;
+import org.stellar.sdk.requests.RequestBuilder;
 import org.stellar.sdk.responses.AccountResponse;
+import org.stellar.sdk.responses.OfferResponse;
 import org.stellar.sdk.responses.Page;
 import org.stellar.sdk.responses.SubmitTransactionResponse;
 import org.stellar.sdk.responses.operations.OperationResponse;
@@ -23,10 +26,12 @@ class Payments {
     static Transaction doTrasnaction(KeyPair source, Operation operation, Memo memo) {
         return doTrasnaction(source, null, operation, memo);
     }
+
     static Transaction doTrasnaction(KeyPair source, KeyPair destination, Operation operation, Memo memo) {
         Operation ops[] = {operation};
         return doTrasnaction(source, destination, ops, memo);
     }
+
     static Transaction doTrasnaction(KeyPair source, KeyPair destination, Operation operations[], Memo memo) {
 
         if (operations == null || operations.length == 0) {
@@ -84,6 +89,16 @@ class Payments {
                         ((SetOptionsOperation) op).getMasterKeyWeight(),
                         ((SetOptionsOperation) op).getSigner(),
                         ((SetOptionsOperation) op).getSignerWeight()));
+            } else if (op instanceof ManageOfferOperation) {
+                Config.log(String.format(
+                        "%s -> id = %s\n\tAmount = %s\n\tSelling = %s\n\tPrice = %s\n\tBuying = %s",
+                        op.getClass().getSimpleName(),
+                        ((ManageOfferOperation) op).getOfferId(),
+                        ((ManageOfferOperation) op).getAmount(),
+                        ((ManageOfferOperation) op).getSelling(),
+                        ((ManageOfferOperation) op).getPrice(),
+                        ((ManageOfferOperation) op).getBuying()
+                ));
             } else {
                 Config.log(String.format("%s -> ...", op.getClass().getSimpleName()));
             }
@@ -141,6 +156,53 @@ class Payments {
                     ((AssetTypeCreditAlphaNum) asset).getIssuer().getAccountId();
         }
     }
+
+    private static void printOffer(OfferResponse offerResponse, KeyPair pair) {
+//        // Record the paging token so we can start from here next time.
+//        Config.saveLastPagingToken(pair.getAccountId(), offerResponse.getPagingToken());
+
+            String output = "" +
+                    String.valueOf(offerResponse.getId()) +
+                    ": " +
+                    offerResponse.getAmount() +
+                    " " +
+                    formatAssetName(offerResponse.getSelling()) +
+                    ", price " +
+                    offerResponse.getPrice() +
+                    " " +
+                    formatAssetName(offerResponse.getBuying());
+            System.out.println(output);
+
+    }
+    static void fetchOffers(final String accountId) {
+
+        Server server = Connections.getServer();
+        final KeyPair pair = KeyPair.fromAccountId(accountId);
+
+        OffersRequestBuilder request = server.offers().forAccount(pair);
+
+//        // If some payments have already been handled, start the results from the
+//        // last seen payment. (See below in `handlePayment` where it gets saved.)
+//        String lastToken = Config.loadLastPagingToken(accountId);
+//        if (lastToken != null) {
+//            request.cursor(lastToken);
+//        }
+
+        Config.log("\nOffers for " + accountId + " (execute)");
+        Page<OfferResponse> page = null;
+        try {
+            page = request.execute();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (page != null) {
+            for (OfferResponse response : page.getRecords()) {
+                printOffer(response, pair);
+            }
+        }
+    }
+
+
     private static void printOperation(OperationResponse operationResponse, KeyPair pair) {
         // Record the paging token so we can start from here next time.
         Config.saveLastPagingToken(pair.getAccountId(), operationResponse.getPagingToken());
@@ -163,7 +225,6 @@ class Payments {
         }
 
     }
-
     static void fetchPayments(final String accountId) {
         Server server = Connections.getServer();
         final KeyPair pair = KeyPair.fromAccountId(accountId);
@@ -189,7 +250,6 @@ class Payments {
             });
         } else {
             Config.log("\nPayments for " + accountId + " (execute)");
-            paymentsRequest = server.payments().forAccount(pair);
             Page<OperationResponse> page = null;
             try {
                 page = paymentsRequest.execute();
@@ -202,6 +262,5 @@ class Payments {
                 }
             }
         }
-
     }
 }

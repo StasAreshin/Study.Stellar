@@ -1,5 +1,8 @@
 import org.stellar.sdk.*;
+import org.stellar.sdk.requests.OffersRequestBuilder;
 import org.stellar.sdk.responses.AccountResponse;
+
+import java.security.Key;
 
 /**
  * Created by Stas on 2018-06-13.
@@ -15,6 +18,11 @@ class TestCases {
     private static final String ACCOUNT_ID_2 = "GA4ZSA3YCV25ARCLWK6N2WX2YT4GLNCMHVJSY5LJG3DF7R2BOEHKMUUS";
 
     private static final String ASSET_ASTRODOLLAR = "AstroDollar";
+
+    static void printAccountDetails() {
+        Accounts.printAccountDetails(ACCOUNT_ID_1);
+        Accounts.printAccountDetails(ACCOUNT_ID_2);
+    }
 
     static void doTransactions() {
         doTransactionFromAccount(ACCOUNT_ID_1, SEED_1, ACCOUNT_ID_2);
@@ -48,6 +56,10 @@ class TestCases {
         Payments.fetchPayments(ACCOUNT_ID_2);
     }
 
+    static void readOffers() {
+        Payments.fetchOffers(ACCOUNT_ID_1);
+        Payments.fetchOffers(ACCOUNT_ID_2);
+    }
 
     private static Asset getAstroDollar() {
         return getAstroDollar(KeyPair.fromSecretSeed(SEED_1));
@@ -75,7 +87,7 @@ class TestCases {
         Payments.doTrasnaction(receivingKeys, issuingKeys, new ChangeTrustOperation.Builder(astroDollar, "1000").build(), null);
 
         // Second, the issuing account actually sends a payment using the asset
-        Payments.doTrasnaction(issuingKeys, receivingKeys, new PaymentOperation.Builder(receivingKeys, astroDollar, "10").build(), null);
+        Payments.doTrasnaction(issuingKeys, receivingKeys, new PaymentOperation.Builder(receivingKeys, astroDollar, "980").build(), null);
 
         Accounts.printAccountDetails(ACCOUNT_ID_1);
         Accounts.printAccountDetails(ACCOUNT_ID_2);
@@ -96,9 +108,30 @@ class TestCases {
     }
 
     static void checkTrustBeforePaying() {
+        KeyPair pair_1 = KeyPair.fromAccountId(ACCOUNT_ID_1);
         KeyPair pair_2 = KeyPair.fromAccountId(ACCOUNT_ID_2);
         boolean trust1 = Payments.checkTrust(getAstroDollar(), pair_2);
         boolean trust2 = Payments.checkTrust(getAstroDollar(pair_2), pair_2);
+        boolean trust3 = Payments.checkTrust(getAstroDollar(), pair_1);
+        boolean trust4 = Payments.checkTrust(getAstroDollar(pair_2), pair_1);
+    }
+
+    static void changeOffer() {
+        TestCases.readOffers();
+
+        long offerId = 433276;
+        KeyPair baseKeys = KeyPair.fromSecretSeed(SEED_2);
+
+        ManageOfferOperation.Builder operationBuilder = new ManageOfferOperation.Builder(getAstroDollar(), new AssetTypeNative(), "500", "30");
+        if (offerId != 0) {
+            operationBuilder.setOfferId(offerId);
+        }
+        Payments.doTrasnaction(
+                baseKeys,
+                operationBuilder.build(),
+                Memo.text("changeOffer id=" + String.valueOf(offerId)));
+
+        TestCases.readOffers();
     }
 
 }
