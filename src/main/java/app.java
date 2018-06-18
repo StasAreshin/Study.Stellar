@@ -14,13 +14,15 @@ public class app {
     }
 
     private static void runOperations() {
-//        TestCases.printAccountDetails();
+        TestCases.printAccountDetails();
 //        TestCases.doTransactions();
 //        TestCases.readPayments();
 //        TestCases.nonNativeAssetTest();
 //        TestCases.setDomainTest();
 //        TestCases.checkTrustBeforePaying();
-        TestCases.changeOffer();
+//        TestCases.changeOffer();
+//        TestCases.createNewAccount();
+        TestCases.mergeAccounts();
     }
 
     public static void main(String arg[]) {

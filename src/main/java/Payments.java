@@ -11,6 +11,7 @@ import org.stellar.sdk.responses.operations.OperationResponse;
 import org.stellar.sdk.responses.operations.PaymentOperationResponse;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Created by Stas on 2018-06-13.
@@ -99,6 +100,22 @@ class Payments {
                         ((ManageOfferOperation) op).getPrice(),
                         ((ManageOfferOperation) op).getBuying()
                 ));
+            } else if (op instanceof CreateAccountOperation) {
+                Config.log(String.format(
+                        "%s -> id = %s\n\tseed = %s\n\tStartingBalance = %s\n\tSourceAccountId = %s",
+                        op.getClass().getSimpleName(),
+                        ((CreateAccountOperation) op).getDestination().getAccountId(),
+                        new String(((CreateAccountOperation) op).getDestination().getSecretSeed()),
+                        ((CreateAccountOperation) op).getStartingBalance(),
+                        ((CreateAccountOperation) op).getSourceAccount().getAccountId()
+                ));
+            } else if (op instanceof AccountMergeOperation) {
+                Config.log(String.format(
+                        "%s -> from = %s\n\tto = %s",
+                        op.getClass().getSimpleName(),
+                        ((AccountMergeOperation) op).getSourceAccount() == null ? null : ((AccountMergeOperation) op).getSourceAccount().getAccountId(),
+                        ((AccountMergeOperation) op).getDestination().getAccountId()
+                ));
             } else {
                 Config.log(String.format("%s -> ...", op.getClass().getSimpleName()));
             }
@@ -112,11 +129,7 @@ class Payments {
         //And finally, send it off to Stellar!
         try {
             SubmitTransactionResponse response = server.submitTransaction(transaction);
-            if (response.isSuccess()) {
-                Config.log("Success!");
-            } else {
-                Config.log("Something went wrong:\n" + response);
-            }
+            Config.log(formatTransactionResponse(response));
         } catch (Exception e) {
             Config.log("Exception:\n" + e.getMessage());
             // If the result is unknown (no response body, timeout etc.) we simply resubmit
@@ -125,6 +138,25 @@ class Payments {
         }
 
         return transaction;
+    }
+    private static String formatTransactionResponse(SubmitTransactionResponse response) {
+        String result = "";
+        if (response.isSuccess()) {
+            result = "Success!";
+        } else {
+            ArrayList<String> operationResultCodes = response.getExtras().getResultCodes().getOperationsResultCodes();
+            String transactionResultCode = response.getExtras().getResultCodes().getTransactionResultCode();
+            result = "Something went wrong:\n" +
+                    String.format(
+                            "\n\tEnvelopeXdr = %s\n\tResultXdr = %s\n\toperationResultCodes = %s\n\ttransactionResultCode = %s",
+                            response.getEnvelopeXdr(),
+                            response.getResultXdr(),
+                            String.join(", ", operationResultCodes),
+                            transactionResultCode
+                    );
+        }
+
+        return result;
     }
 
     static boolean checkTrust(Asset asset, KeyPair keysToCheck) {
@@ -188,7 +220,6 @@ class Payments {
 //            request.cursor(lastToken);
 //        }
 
-        Config.log("\nOffers for " + accountId + " (execute)");
         Page<OfferResponse> page = null;
         try {
             page = request.execute();
@@ -196,6 +227,7 @@ class Payments {
             e.printStackTrace();
         }
         if (page != null) {
+            Config.log("\nOffers for " + accountId + " (execute)");
             for (OfferResponse response : page.getRecords()) {
                 printOffer(response, pair);
             }

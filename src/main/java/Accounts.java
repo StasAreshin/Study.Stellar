@@ -1,5 +1,4 @@
-import org.stellar.sdk.KeyPair;
-import org.stellar.sdk.Server;
+import org.stellar.sdk.*;
 import org.stellar.sdk.responses.AccountResponse;
 
 import java.io.IOException;
@@ -30,6 +29,11 @@ class Accounts {
                     balance.getBalance()
             ));
         }
+
+//        Connections.getServer().accounts().
+//        account.getSigners()
+
+        Payments.fetchOffers(account.getKeypair().getAccountId());
     }
 
     static AccountResponse getAccount(String accountId) {
@@ -50,6 +54,7 @@ class Accounts {
         return result;
     }
 
+    // Use it to create new independent account in the test network only
     static void createTestAccount() {
         KeyPair pair = generateNewPair();
         String friendBotURL = String.format(app.HOST_FRIEND_BOT + "/?addr=%s", pair.getAccountId());
@@ -64,6 +69,36 @@ class Accounts {
             String body = new Scanner(response, "UTF-8").useDelimiter("\\A").next();
             Config.log("SUCCESS! You have a new account :)\n" + body);
         }
+    }
+
+    static KeyPair createAccount(KeyPair sourceAccount, String startAmount) {
+        KeyPair result = generateNewPair();
+        Config.log("creating from source " + sourceAccount.getAccountId() + " ...");
+
+        CreateAccountOperation.Builder operationBuilder = new CreateAccountOperation.Builder(result, startAmount)
+                .setSourceAccount(sourceAccount);
+
+        Payments.doTrasnaction(
+                sourceAccount,
+                operationBuilder.build(),
+                Memo.text("Create Account Operation"));
+
+        return result;
+    }
+
+    static void mergeAccounts(char fromSeed[], char toSeed[]) {
+        Config.log("Merging account ...");
+
+        KeyPair pairTo = KeyPair.fromSecretSeed(toSeed);
+        KeyPair pairFrom = KeyPair.fromSecretSeed(fromSeed);
+
+        AccountMergeOperation.Builder operationBuilder = new AccountMergeOperation.Builder(pairTo)
+                .setSourceAccount(pairFrom);
+
+        Payments.doTrasnaction(
+                pairFrom,
+                operationBuilder.build(),
+                Memo.text("Merge Account Operation"));
     }
 
     private static KeyPair generateNewPair() {
