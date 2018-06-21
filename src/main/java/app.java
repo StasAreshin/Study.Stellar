@@ -5,9 +5,9 @@ public class app {
 
     private static final String PARAM_RUNINITIALIZATION = "run_initialization";
 
-    static final String HOST_HORIZON_LOCAL = "http://localhost:8000";
-    static final String HOST_HORIZON_REMOTE = "https://horizon-testnet.stellar.org";
-    public static final String HOST_HORIZON = HOST_HORIZON_LOCAL;
+    private static final String HOST_HORIZON_LOCAL = "http://localhost:8000";
+    private static final String HOST_HORIZON_REMOTE = "https://horizon-testnet.stellar.org";
+    static final String HOST_HORIZON = HOST_HORIZON_REMOTE;//HOST_HORIZON_LOCAL;
 
      static final String HOST_FRIEND_BOT = "https://friendbot.stellar.org";
 
@@ -16,8 +16,8 @@ public class app {
     }
 
     private static void runOperations() {
-//        TestCases.printAccountDetails();
-        Accounts.createTestAccount();
+        TestCases.printAccountDetails();
+//        Accounts.createTestAccount();
 //        TestCases.doTransactions();
 //        TestCases.readPayments();
 //        TestCases.nonNativeAssetTest();

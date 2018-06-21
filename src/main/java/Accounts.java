@@ -1,12 +1,23 @@
+import com.google.gson.*;
+import com.sun.deploy.net.HttpResponse;
 import org.stellar.sdk.*;
 import org.stellar.sdk.requests.ErrorResponse;
 import org.stellar.sdk.responses.AccountResponse;
 import org.stellar.sdk.responses.LedgerResponse;
 import org.stellar.sdk.responses.Page;
+import sun.net.www.http.HttpClient;
+import sun.rmi.runtime.Log;
 
+import javax.xml.bind.DatatypeConverter;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
@@ -15,14 +26,47 @@ import java.util.concurrent.ConcurrentMap;
  */
 class Accounts {
 
+    static String getAccountData(String accountId, String key) {
+        String result = null;
+        try {
+            URL obj = new URL(app.HOST_HORIZON + "/accounts/" + accountId + "/data/" + key);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("GET");
+            con.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+            if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+
+                String inputLine;
+                StringBuffer response = new StringBuffer();
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                JsonParser parser = new JsonParser();
+                JsonObject mainObject = parser.parse(response.toString()).getAsJsonObject();
+                result = new String(DatatypeConverter.parseBase64Binary(mainObject.get("value").getAsString()), Charset.defaultCharset());
+            }
+        } catch (
+                Exception e)
+        {
+            e.printStackTrace();
+        }
+        return result;
+    }
     static void printAccountDetails(String accountId) {
         printAccountDetails(getAccount(accountId));
     }
+
     static void printAccountDetails(AccountResponse account) {
         if (account == null) {
             return;
         }
-        Config.log(Config.DELIMITER + "Account: " + account.getKeypair().getAccountId() + " " + account.getHomeDomain());
+        String accountName = getAccountData(account.getKeypair().getAccountId(), "name");
+
+        Config.log(Config.DELIMITER + "Account: " + account.getKeypair().getAccountId() + " " + (accountName != null ? accountName : ""));
         Config.log("Currencies:");
         for (AccountResponse.Balance balance : account.getBalances()) {
             Config.log(String.format(
@@ -36,13 +80,12 @@ class Accounts {
 
         Payments.fetchOffers(account.getKeypair().getAccountId());
 
-        Server server = Connections.getServer();
-
     }
 
     static AccountResponse getAccount(String accountId) {
         return getAccount(KeyPair.fromAccountId(accountId));
     }
+
     static AccountResponse getAccount(KeyPair pair) {
         AccountResponse result = null;
 
@@ -92,8 +135,7 @@ class Accounts {
         Config.log("creating from source " + sourceAccount.getAccountId() + " ...");
 
         CreateAccountOperation.Builder operationBuilder = new CreateAccountOperation.Builder(result, startAmount)
-                .setSourceAccount(sourceAccount)
-                ;
+                .setSourceAccount(sourceAccount);
 
         Payments.doTrasnaction(
                 sourceAccount,
@@ -119,16 +161,17 @@ class Accounts {
     }
 
     static void manageData(KeyPair account, String key, byte[] value) {
-        Map<String, byte[]> values = new HashMap<String, byte[]>();
+        Map<String, byte[]> values = new HashMap<>();
         values.put(key, value);
         manageData(account, values);
     }
+
     static void manageData(KeyPair account, Map<String, byte[]> values) {
         Config.log("Managing data ...");
 
         ManageDataOperation ops[] = new ManageDataOperation[values.size()];
         int i = 0;
-        for (Map.Entry<String, byte[]> value: values.entrySet()) {
+        for (Map.Entry<String, byte[]> value : values.entrySet()) {
 
             ops[i] = new ManageDataOperation.Builder(value.getKey(), value.getValue())
                     .setSourceAccount(account)

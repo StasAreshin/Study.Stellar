@@ -1,6 +1,7 @@
 import org.stellar.sdk.*;
 import org.stellar.sdk.responses.AccountResponse;
 
+import java.nio.charset.Charset;
 import java.security.Key;
 
 /**
@@ -177,9 +178,12 @@ class TestCases {
     }
 
     static void manageData() {
-        Accounts.manageData(KeyPair.fromSecretSeed(ISSUING_SEED), "name", "Issuing".getBytes());
-        Accounts.manageData(KeyPair.fromSecretSeed(BASE_SEED), "name", "Base".getBytes());
-        Accounts.manageData(KeyPair.fromSecretSeed(SEED_2), "name", "Account 002".getBytes());
+        Accounts.manageData(KeyPair.fromSecretSeed(ISSUING_SEED), "name", "Issuing".getBytes(Charset.defaultCharset()));
+        Accounts.manageData(KeyPair.fromSecretSeed(BASE_SEED), "name", "Base".getBytes(Charset.defaultCharset()));
+        Accounts.manageData(KeyPair.fromSecretSeed(SEED_2), "name", "Account 002".getBytes(Charset.defaultCharset()));
+        Accounts.manageData(KeyPair.fromSecretSeed(SEED_3), "name", "Account 003".getBytes(Charset.defaultCharset()));
+        Accounts.manageData(KeyPair.fromSecretSeed(SEED_4), "name", "Account 004".getBytes(Charset.defaultCharset()));
+        Accounts.manageData(KeyPair.fromSecretSeed(SEED_5), "name", "Account 005".getBytes(Charset.defaultCharset()));
     }
 
     static void offersTest() {
