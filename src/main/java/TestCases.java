@@ -334,8 +334,8 @@ class TestCases {
         };
 
         // Need to add ALL of KeyPairs
+        // issuing account will only pay XLM tax for all operations. All operations are belongs to other accounts. But it also must be in signers array
         KeyPair signers[] = {issuing, base, acc2, acc3, acc4, acc5};
-        // issuing account will only pay XLM tax for all operations. All operations are belongs to other accounts
         Payments.doTrasnaction(issuing, null, setTrustOperations, null, signers);
     }
 
