@@ -2,10 +2,11 @@
  * Created by Stas on 2018-06-13.
  */
 class Config {
-    private static final Boolean printLog = true;
+    private static final Boolean PRINT_LOG = true;
+    public static final String DELIMITER = "---------------------------------\n";
 
     static void log(String text) {
-        if (printLog) {
+        if (PRINT_LOG) {
             System.out.println(text);
         }
     }

@@ -107,14 +107,22 @@ class Payments {
                         ((CreateAccountOperation) op).getDestination().getAccountId(),
                         new String(((CreateAccountOperation) op).getDestination().getSecretSeed()),
                         ((CreateAccountOperation) op).getStartingBalance(),
-                        ((CreateAccountOperation) op).getSourceAccount().getAccountId()
+                        op.getSourceAccount() == null ? null : op.getSourceAccount().getAccountId()
                 ));
             } else if (op instanceof AccountMergeOperation) {
                 Config.log(String.format(
                         "%s -> from = %s\n\tto = %s",
                         op.getClass().getSimpleName(),
-                        ((AccountMergeOperation) op).getSourceAccount() == null ? null : ((AccountMergeOperation) op).getSourceAccount().getAccountId(),
+                        op.getSourceAccount() == null ? null : op.getSourceAccount().getAccountId(),
                         ((AccountMergeOperation) op).getDestination().getAccountId()
+                ));
+            } else if (op instanceof ManageDataOperation) {
+                Config.log(String.format(
+                        "%s -> acc = %s:\n\t%s = %s",
+                        op.getClass().getSimpleName(),
+                        op.getSourceAccount() == null ? null : op.getSourceAccount().getAccountId(),
+                        ((ManageDataOperation) op).getName(),
+                        new String(((ManageDataOperation) op).getValue())
                 ));
             } else {
                 Config.log(String.format("%s -> ...", op.getClass().getSimpleName()));
@@ -139,6 +147,7 @@ class Payments {
 
         return transaction;
     }
+
     private static String formatTransactionResponse(SubmitTransactionResponse response) {
         String result = "";
         if (response.isSuccess()) {
@@ -179,7 +188,7 @@ class Payments {
         return false;
     }
 
-    private static String formatAssetName(Asset asset) {
+    static String formatAssetName(Asset asset) {
         if (asset.equals(new AssetTypeNative())) {
             return "lumens";
         } else {
@@ -193,19 +202,20 @@ class Payments {
 //        // Record the paging token so we can start from here next time.
 //        Config.saveLastPagingToken(pair.getAccountId(), offerResponse.getPagingToken());
 
-            String output = "" +
-                    String.valueOf(offerResponse.getId()) +
-                    ": " +
-                    offerResponse.getAmount() +
-                    " " +
-                    formatAssetName(offerResponse.getSelling()) +
-                    ", price " +
-                    offerResponse.getPrice() +
-                    " " +
-                    formatAssetName(offerResponse.getBuying());
-            System.out.println(output);
+        String output = "" +
+                String.valueOf(offerResponse.getId()) +
+                ": " +
+                offerResponse.getAmount() +
+                " " +
+                formatAssetName(offerResponse.getSelling()) +
+                ", price " +
+                offerResponse.getPrice() +
+                " " +
+                formatAssetName(offerResponse.getBuying());
+        System.out.println(output);
 
     }
+
     static void fetchOffers(final String accountId) {
 
         Server server = Connections.getServer();
@@ -227,9 +237,41 @@ class Payments {
             e.printStackTrace();
         }
         if (page != null) {
-            Config.log("\nOffers for " + accountId + " (execute)");
-            for (OfferResponse response : page.getRecords()) {
-                printOffer(response, pair);
+            ArrayList<OfferResponse> pages = page.getRecords();
+            if (pages.size() > 0) {
+                Config.log("Offers:");
+                for (OfferResponse response : pages) {
+                    printOffer(response, pair);
+                }
+            }
+        }
+    }
+
+    static void clearOffers(KeyPair pair) {
+
+        Server server = Connections.getServer();
+
+        OffersRequestBuilder request = server.offers().forAccount(pair);
+
+        Page<OfferResponse> page = null;
+        try {
+            page = request.execute();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (page != null) {
+            Config.log(Config.DELIMITER + "Clear offers for " + pair.getAccountId());
+            ArrayList<OfferResponse> pages = page.getRecords();
+            ManageOfferOperation operations[] = new ManageOfferOperation[pages.size()];
+            int i = 0;
+            for (OfferResponse response : pages) {
+                operations[i] = new ManageOfferOperation.Builder(response.getSelling(), response.getBuying(), "0", response.getPrice())
+                        .setOfferId(response.getId())
+                        .build();
+                i++;
+            }
+            if (operations.length > 0) {
+                Payments.doTrasnaction(pair, null, operations, null);
             }
         }
     }
@@ -257,6 +299,7 @@ class Payments {
         }
 
     }
+
     static void fetchPayments(final String accountId) {
         Server server = Connections.getServer();
         final KeyPair pair = KeyPair.fromAccountId(accountId);
