@@ -34,6 +34,9 @@ class Payments {
     }
 
     static Transaction doTrasnaction(KeyPair source, KeyPair destination, Operation operations[], Memo memo) {
+        return doTrasnaction(source, destination, operations, memo, new KeyPair[]{source});
+    }
+    static Transaction doTrasnaction(KeyPair source, KeyPair destination, Operation operations[], Memo memo, KeyPair signers[]) {
 
         if (operations == null || operations.length == 0) {
             return null;
@@ -131,7 +134,9 @@ class Payments {
         Transaction transaction = trBuilder.build();
 
         // Sign the transaction to prove you are actually the person sending it.
-        transaction.sign(source);
+        for (KeyPair signer : signers) {
+            transaction.sign(signer);
+        }
 
         Server server = Connections.getServer();
         //And finally, send it off to Stellar!
@@ -140,6 +145,8 @@ class Payments {
             Config.log(formatTransactionResponse(response));
         } catch (Exception e) {
             Config.log("Exception:\n" + e.getMessage());
+            e.printStackTrace();
+//            Config.log("Exception:\n" + );
             // If the result is unknown (no response body, timeout etc.) we simply resubmit
             // already built transaction:
             // SubmitTransactionResponse response = server.submitTransaction(transaction);
@@ -160,7 +167,7 @@ class Payments {
                             "\n\tEnvelopeXdr = %s\n\tResultXdr = %s\n\toperationResultCodes = %s\n\ttransactionResultCode = %s",
                             response.getEnvelopeXdr(),
                             response.getResultXdr(),
-                            String.join(", ", operationResultCodes),
+                            operationResultCodes != null ? String.join(", ", operationResultCodes) : null,
                             transactionResultCode
                     );
         }

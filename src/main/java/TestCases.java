@@ -292,4 +292,51 @@ class TestCases {
 
     }
 
+    static void multiSignationTest() {
+
+        KeyPair issuing = KeyPair.fromSecretSeed(ISSUING_SEED);
+        KeyPair base = KeyPair.fromSecretSeed(BASE_SEED);
+        KeyPair acc2 = KeyPair.fromSecretSeed(SEED_2);
+        KeyPair acc3 = KeyPair.fromSecretSeed(SEED_3);
+        KeyPair acc4 = KeyPair.fromSecretSeed(SEED_4);
+        KeyPair acc5 = KeyPair.fromSecretSeed(SEED_5);
+
+        Asset USD = Asset.createNonNativeAsset("USD", issuing);
+        Asset EUR = Asset.createNonNativeAsset("EUR", issuing);
+        Asset UAH = Asset.createNonNativeAsset("UAH", issuing);
+        Asset RUB = Asset.createNonNativeAsset("RUB", issuing);
+
+        Operation[] setTrustOperations = {
+                new ChangeTrustOperation.Builder(USD, "1000").setSourceAccount(base).build(),
+                new ChangeTrustOperation.Builder(EUR, "1000").setSourceAccount(base).build(),
+                new ChangeTrustOperation.Builder(UAH, "1000").setSourceAccount(base).build(),
+                new ChangeTrustOperation.Builder(RUB, "1000").setSourceAccount(base).build(),
+
+                new ChangeTrustOperation.Builder(USD, "1000").setSourceAccount(acc2).build(),
+                new ChangeTrustOperation.Builder(EUR, "1000").setSourceAccount(acc2).build(),
+                new ChangeTrustOperation.Builder(UAH, "1000").setSourceAccount(acc2).build(),
+                new ChangeTrustOperation.Builder(RUB, "1000").setSourceAccount(acc2).build(),
+
+                new ChangeTrustOperation.Builder(USD, "1000").setSourceAccount(acc3).build(),
+                new ChangeTrustOperation.Builder(EUR, "1000").setSourceAccount(acc3).build(),
+                new ChangeTrustOperation.Builder(UAH, "1000").setSourceAccount(acc3).build(),
+                new ChangeTrustOperation.Builder(RUB, "1000").setSourceAccount(acc3).build(),
+
+                new ChangeTrustOperation.Builder(USD, "1000").setSourceAccount(acc4).build(),
+                new ChangeTrustOperation.Builder(EUR, "1000").setSourceAccount(acc4).build(),
+                new ChangeTrustOperation.Builder(UAH, "1000").setSourceAccount(acc4).build(),
+                new ChangeTrustOperation.Builder(RUB, "1000").setSourceAccount(acc4).build(),
+
+                new ChangeTrustOperation.Builder(USD, "1000").setSourceAccount(acc5).build(),
+                new ChangeTrustOperation.Builder(EUR, "1000").setSourceAccount(acc5).build(),
+                new ChangeTrustOperation.Builder(UAH, "1000").setSourceAccount(acc5).build(),
+                new ChangeTrustOperation.Builder(RUB, "1000").setSourceAccount(acc5).build()
+        };
+
+        // Need to add ALL of KeyPairs
+        KeyPair signers[] = {issuing, base, acc2, acc3, acc4, acc5};
+        // issuing account will only pay XLM tax for all operations. All operations are belongs to other accounts
+        Payments.doTrasnaction(issuing, null, setTrustOperations, null, signers);
+    }
+
 }

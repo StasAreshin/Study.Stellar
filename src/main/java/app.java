@@ -31,7 +31,8 @@ public class app {
 //        Connections.getCommonInfo();
 
 //        TestCases.offersTest();
-//        TestCases.printAccountDetails();
+        TestCases.multiSignationTest();
+        TestCases.printAccountDetails();
     }
 
     public static void main(String arg[]) {
